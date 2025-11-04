@@ -1,0 +1,35 @@
+{
+    "title": "Simulate Backend Pod Failure",
+    "description": "Delete the backend pod to test ClientService resilience",
+    "method": [
+        {
+            "type": "action",
+            "name": "terminate-backend-pod",
+            "provider": {
+                "type": "python",
+                "module": "chaosk8s.pod.actions",
+                "func": "terminate_pods",
+                "arguments": {
+                    "label_selector": "app=backend",
+                    "ns": "default"
+                }
+            }
+        }
+    ],
+    "rollbacks": [
+        {
+            "type": "action",
+            "name": "redeploy-backend",
+            "provider": {
+                "type": "python",
+                "module": "chaosk8s.deployment.actions",
+                "func": "scale_deployment",
+                "arguments": {
+                    "name": "backend-deployment",
+                    "replicas": 1,
+                    "ns": "default"
+                }
+            }
+        }
+    ]
+}

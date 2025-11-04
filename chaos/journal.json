@@ -1,0 +1,98 @@
+{
+  "chaoslib-version": "1.44.0",
+  "platform": "macOS-15.6.1-x86_64-i386-64bit",
+  "node": "localhost",
+  "experiment": {
+    "title": "Simulate Backend Pod Failure",
+    "description": "Delete the backend pod to test ClientService resilience",
+    "method": [
+      {
+        "type": "action",
+        "name": "terminate-backend-pod",
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.pod.actions",
+          "func": "terminate_pods",
+          "arguments": {
+            "label_selector": "app=backend",
+            "ns": "default"
+          }
+        }
+      }
+    ],
+    "rollbacks": [
+      {
+        "type": "action",
+        "name": "redeploy-backend",
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.deployment.actions",
+          "func": "scale_deployment",
+          "arguments": {
+            "name": "backend-deployment",
+            "replicas": 1,
+            "ns": "default"
+          }
+        }
+      }
+    ],
+    "dry": null
+  },
+  "start": "2025-10-30T22:19:37.360769+00:00",
+  "status": "completed",
+  "deviated": false,
+  "steady_states": {
+    "before": null,
+    "after": null,
+    "during": []
+  },
+  "run": [
+    {
+      "activity": {
+        "type": "action",
+        "name": "terminate-backend-pod",
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.pod.actions",
+          "func": "terminate_pods",
+          "arguments": {
+            "label_selector": "app=backend",
+            "ns": "default"
+          }
+        }
+      },
+      "output": [
+        "backend-deployment-869fbd9787-sj45p"
+      ],
+      "start": "2025-10-30T22:19:37.362467+00:00",
+      "status": "succeeded",
+      "end": "2025-10-30T22:19:37.407372+00:00",
+      "duration": 0.044905
+    }
+  ],
+  "rollbacks": [
+    {
+      "activity": {
+        "type": "action",
+        "name": "redeploy-backend",
+        "provider": {
+          "type": "python",
+          "module": "chaosk8s.deployment.actions",
+          "func": "scale_deployment",
+          "arguments": {
+            "name": "backend-deployment",
+            "replicas": 1,
+            "ns": "default"
+          }
+        }
+      },
+      "output": null,
+      "start": "2025-10-30T22:19:37.408149+00:00",
+      "status": "succeeded",
+      "end": "2025-10-30T22:19:37.436279+00:00",
+      "duration": 0.02813
+    }
+  ],
+  "end": "2025-10-30T22:19:37.436421+00:00",
+  "duration": 0.16075611114501953
+}

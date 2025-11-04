@@ -1,0 +1,10 @@
+{
+    "name": "client",
+    "version": "1.0.0",
+    "type": "module",
+    "dependencies": {
+        "axios": "^1.13.1",
+        "express": "^4.19.2",
+        "opossum": "^9.0.0"
+    }
+}

@@ -1,0 +1,14 @@
+resilience-lab-node/
+│
+├── backend/
+│   ├── server.js
+│   ├── package.json
+│   └── Dockerfile
+│
+├── client/
+│   ├── server.js
+│   ├── package.json
+│   └── Dockerfile
+│
+├── docker-compose.yml
+└── README.md
