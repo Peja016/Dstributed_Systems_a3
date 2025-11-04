@@ -245,8 +245,6 @@ project-root/
 
 ## References
 
-- _Designing Data-Intensive Applications_ – Martin Kleppmann
-- _Release It!_ – Michael T. Nygard
 - Chaos Toolkit Documentation: [https://chaostoolkit.org](https://chaostoolkit.org)
 - Opossum Circuit Breaker Library: [https://github.com/nodeshift/opossum](https://github.com/nodeshift/opossum)
 
