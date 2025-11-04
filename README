@@ -48,7 +48,6 @@ The following diagram illustrates the distributed system architecture of this la
 Two Node.js microservices (**ClientService** and **BackendService**) are containerized using Docker and deployed on a Kubernetes cluster.  
 They communicate internally through Kubernetes Services.
 
-```text
                    ┌─────────────────────────────┐
                    │      Kubernetes Cluster     │
                    │ ─────────────────────────── │
