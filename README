@@ -1,14 +1,266 @@
-resilience-lab-node/
+# Distributed Systems Lab 3 – Resilience Engineering
+
+This project demonstrates the design and implementation of **resilient distributed systems** using Node.js microservices deployed on **Kubernetes**.  
+It explores three key resilience mechanisms: **Circuit Breaker**, **Retry with Exponential Backoff and Jitter**, and **Chaos Engineering**.
+
+---
+
+## Project Overview
+
+The goal of this lab is to understand how distributed applications can **withstand, recover from, and gracefully degrade** during partial failures.
+
+### Key Objectives
+
+- Implement and analyze **Circuit Breaker** and **Retry/Backoff** patterns.
+- Use **Chaos Engineering** to simulate backend failures.
+- Observe system behavior under stress and analyze **architectural trade-offs**.
+- Relate design decisions to **CAP Theorem**, **availability**, and **fault tolerance** principles.
+
+---
+
+## System Architecture
+
+The application consists of two Node.js microservices:
+
+1. **ClientService**
+
+   - Sends HTTP requests to the backend.
+   - Implements endpoints for testing baseline, circuit breaker, and retry logic:
+     - `/fetch`, `/loop`
+     - `/fetchBreaker`, `/loopBreaker`
+     - `/fetchRetry`, `/loopRetry`
+   - Collects response latency, status codes, and error types.
+
+2. **BackendService**
+   - Responds with a simple JSON payload:
+     ```json
+     { "message": "Hello from Backend!" }
+     ```
+   - Randomly simulates latency (0–3s) and HTTP 500 errors for testing resilience.
+
+Both services are containerized using **Docker** and deployed on **Kubernetes** as separate Deployments with corresponding Services for internal communication.
+
+---
+
+## System Architecture Diagram
+
+The following diagram illustrates the distributed system architecture of this lab.  
+Two Node.js microservices (**ClientService** and **BackendService**) are containerized using Docker and deployed on a Kubernetes cluster.  
+They communicate internally through Kubernetes Services.
+
+```text
+                   ┌─────────────────────────────┐
+                   │      Kubernetes Cluster     │
+                   │ ─────────────────────────── │
+                   │                             │
+                   │   ┌─────────────────────┐   │
+                   │   │     Client Pod      │   │
+                   │   │─────────────────────│   │
+                   │   │  ClientService      │   │
+                   │   │  (Node.js + Opossum)│   │
+                   │   └─────────┬───────────┘   │
+                   │             │ HTTP Requests │
+                   │             ▼               │
+                   │   ┌─────────────────────┐   │
+                   │   │     Backend Pod     │   │
+                   │   │─────────────────────│   │
+                   │   │  BackendService     │   │
+                   │   │ (Node.js + Express) │   │
+                   │   └─────────────────────┘   │
+                   │                             │
+                   │  ┌───────────────────────┐  │
+                   │  │  Kubernetes Services  │  │
+                   │  │  (client-service /    │  │
+                   │  │   backend-service)    │  │
+                   │  └───────────────────────┘  │
+                   └─────────────────────────────┘
+
+---
+
+## Installation
+
+Before running locally or building Docker images, install the required dependencies.
+
+Each service has its own `package.json`.  
+From the project root, run:
+
+```bash
+# Install dependencies for both services
+cd client && npm install
+cd ../backend && npm install
+
+---
+
+## Docker Setup
+
+Each service includes its own `Dockerfile`:
+
+Example (ClientService):
+
+```dockerfile
+FROM node:18
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 5000
+CMD ["npm", "start"]
+```
+
+Build images locally:
+
+```bash
+docker build -t client-service ./client
+docker build -t backend-service ./backend
+```
+
+---
+
+## Kubernetes Deployment
+
+Deployment files are located in the `k8s/` directory.
+
+Example (`client-deployment.yaml`):
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+  labels:
+    app: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+        - name: client
+          image: client:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: BACKEND_HOST
+              value: "backend-service"
+            - name: BACKEND_PORT
+              value: "5001"
+            - name: TIMEOUT_MS
+              value: "3000"
+```
+
+Apply all manifests:
+
+```bash
+kubectl apply -f k8s/
+```
+
+Check status:
+
+```bash
+kubectl get pods
+```
+
+Access the service (via Minikube):
+
+```bash
+minikube service client-service
+```
+
+---
+
+## Experiments
+
+### Part A – Baseline Setup
+
+- Deployed both services on Kubernetes.
+- Observed behavior under simulated backend delays and failures.
+- Measured response times and error propagation without resilience mechanisms.
+
+### Part B – Resilience Patterns
+
+- **Circuit Breaker**: Implemented using the `opossum` library.
+  - Parameters: `timeout=3000ms`, `errorThresholdPercentage=50`, `resetTimeout=5000ms`
+- **Retry with Backoff**: Implemented exponential retry delays with random jitter.
+  - Parameters: `maxRetries=5`, `baseDelay=500ms`, `jitter=200ms`
+
+### Part C – Chaos Engineering
+
+- Used **Chaos Toolkit** to terminate the backend pod and observe recovery behavior.
+- Verified that the system continued operating with graceful degradation and automatic self-healing.
+
+---
+
+## Key Observations
+
+- Circuit Breaker reduced latency and prevented cascading failures.
+- Retry pattern improved reliability but introduced additional response delay.
+- Combined patterns achieved an optimal balance between **availability**, **performance**, and **consistency**.
+- Chaos experiments validated **graceful degradation** and **fault tolerance** within Kubernetes.
+
+---
+
+## Architectural Insights
+
+- **Circuit Breaker** prioritizes **availability** over **consistency**, tolerating temporary data staleness to maintain responsiveness.
+- **Retry with Backoff** favors **consistency** but increases **latency** and backend load.
+- **Chaos Engineering** verified that combining both mechanisms results in **self-healing** and **graceful failure** behavior.
+- Overall, the system exemplifies CAP trade-offs in real-world distributed environments.
+
+---
+
+## Project Structure
+
+```
+project-root/
 │
-├── backend/
+├── client/                # Client microservice
+│   ├── client.js
+│   ├── package.json
+|   ├── package-lock.json
+│   ├── Dockerfile
+│
+├── backend/               # Backend microservice
 │   ├── server.js
 │   ├── package.json
-│   └── Dockerfile
+│   ├── Dockerfile
 │
-├── client/
-│   ├── server.js
-│   ├── package.json
-│   └── Dockerfile
+├── k8s/                   # Kubernetes manifests
+│   ├── client-deployment.yaml
+│   ├── backend-deployment.yaml
+│   ├── client-service.yaml
+│   ├── backend-service.yaml
 │
-├── docker-compose.yml
+├── chaos/                 # Chaos experiment files
+│   ├── chaos_backend_failure.json
+│
 └── README.md
+```
+
+---
+
+## References
+
+- _Designing Data-Intensive Applications_ – Martin Kleppmann
+- _Release It!_ – Michael T. Nygard
+- Chaos Toolkit Documentation: [https://chaostoolkit.org](https://chaostoolkit.org)
+- Opossum Circuit Breaker Library: [https://github.com/nodeshift/opossum](https://github.com/nodeshift/opossum)
+
+---
+
+## License
+
+This project is for academic purposes as part of the **COMP Distributed Systems Lab 3** coursework at **University College Dublin (UCD)**.
+
+---
+
+## Author
+
+**Hsuan-Yu Tan**  
+MSc Student, Computer Science
+University College Dublin
